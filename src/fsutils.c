@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include "../lib/ext2_metadata.h"
 
 int main(int argc, char* argv[]) {
     
@@ -9,7 +10,9 @@ int main(int argc, char* argv[]) {
     
     // TODO: identify file format
 
-    // TODO: apply algorithm to extract metadata information
-
+    // TODO: apply algorithm to extract metadata informationº
+    EXT2_metadata superblock;
+    EXT2_METADATA_init(&superblock, argv[2]);
+    EXT2_METADATA_print(&superblock);
     return -1;
 }
