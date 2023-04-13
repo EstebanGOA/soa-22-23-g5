@@ -8,27 +8,74 @@
 #include <sys/types.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <time.h>
+
 
 #define SUPERBLOCK_OFFSET 1024
-#define INODE_SIZE_OFFSET 88
-#define INODE_FIRST_INO_OFFSET 84
-#define INODES_PER_GROUP_OFFSET 40
+
+#define BLOCKS_COUNT_OFFSET 4
+#define R_BLOCKS_COUNT_OFFSET 8
+#define FREE_BLOCKS_COUNT_OFFSET 12
 #define FREE_INODES_COUNT_OFFSET 16
+#define FIRST_DATA_BLOCK_OFFSET 20
+#define LOG_BLOCK_SIZE_OFFSET 24
+
+#define BLOCKS_PER_GROUP_OFFSET 32
+#define FRAGS_PER_GROUP_OFFSET 36
+#define INODES_PER_GROUP_OFFSET 40
+
+#define MTIME_OFFSET 44
+#define WTIME_OFFSET 48
+
+#define LASTCHECK_OFFSET 64
+
+#define FIRST_INO_OFFSET 84
+#define INODE_SIZE_OFFSET 88
+
+#define VOLUME_NAME_OFFSET 120
+#define LAST_MOUNTED_OFFSET 136
 
 /**
  * Struct for ext2 metadata (not all fields are implemented)
  * @ref: https://www.nongnu.org/ext2-doc/ext2.html
 */
 typedef struct {
+
+    /**
+     * Inode info
+    */
     int s_inodes_count;
     short int s_inode_size;
     int s_first_ino;
     int s_inodes_per_group;
     int s_free_inodes_count;
+    
+    /**
+     * Info block
+    */
+    int s_log_block_size; // block size = 1024 << s_log_block_size
+    int s_r_blocks_count;
+    int s_free_blocks_count;
+    int s_blocks_count; // total blocks count
+    int s_first_data_block;
+    int s_blocks_per_group;
+    int s_frags_per_group;
+
+    /**
+     * Info volume
+    */
+    char *s_volume_name;
+    int s_lastcheck; // last check time
+    int s_mtime; // last mount/edited time 
+    int s_wtime; // last write time
+
+    // s_magic identify the filesystem as Ext2
 } EXT2_metadata;
 
 
 void EXT2_METADATA_init(EXT2_metadata *metadata, char *path);
+
+void EXT2_METADATA_free(EXT2_metadata *metadata);
 
 void EXT2_METADATA_print(EXT2_metadata *metadata);
 
