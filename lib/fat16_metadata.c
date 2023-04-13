@@ -1,7 +1,7 @@
 #include "fat16_metadata.h"
 
-int FAT16_METADATA_init( char *path)
-{
+FAT16 FAT16_METADATA_init(char *path) {
+
     int fd;
     fd = open(path, O_RDONLY);
     if (fd < 0) {
@@ -9,11 +9,6 @@ int FAT16_METADATA_init( char *path)
         exit(0);   
     }
 
-
-    return fd;
-}
-
-FAT16 FAT16_METADATA_info(int fd) {
     FAT16 fat16;
     char *buffer = malloc(512);
     int n;

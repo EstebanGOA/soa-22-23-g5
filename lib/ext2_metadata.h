@@ -19,11 +19,9 @@
 #define FREE_INODES_COUNT_OFFSET 16
 #define FIRST_DATA_BLOCK_OFFSET 20
 #define LOG_BLOCK_SIZE_OFFSET 24
-
 #define BLOCKS_PER_GROUP_OFFSET 32
 #define FRAGS_PER_GROUP_OFFSET 36
 #define INODES_PER_GROUP_OFFSET 40
-
 #define MTIME_OFFSET 44
 #define WTIME_OFFSET 48
 
@@ -33,7 +31,6 @@
 #define INODE_SIZE_OFFSET 88
 
 #define VOLUME_NAME_OFFSET 120
-#define LAST_MOUNTED_OFFSET 136
 
 /**
  * Struct for ext2 metadata (not all fields are implemented)
@@ -64,7 +61,7 @@ typedef struct {
     /**
      * Info volume
     */
-    char *s_volume_name;
+    char s_volume_name[16];
     int s_lastcheck; // last check time
     int s_mtime; // last mount/edited time 
     int s_wtime; // last write time
@@ -72,11 +69,12 @@ typedef struct {
     // s_magic identify the filesystem as Ext2
 } EXT2_metadata;
 
+void EXT2_METADATA_lseek_or_die(int fd, int offset, int action);
 
-void EXT2_METADATA_init(EXT2_metadata *metadata, char *path);
+void EXT2_METADATA_read_or_die(int fd, void *buffer, int size, char *error_msg);
 
-void EXT2_METADATA_free(EXT2_metadata *metadata);
+EXT2_metadata EXT2_METADATA_init(char *path);
 
-void EXT2_METADATA_print(EXT2_metadata *metadata);
+void EXT2_METADATA_print(EXT2_metadata metadata);
 
 #endif

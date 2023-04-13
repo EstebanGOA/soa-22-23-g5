@@ -2,12 +2,12 @@
 #define _FAT16_METADATA_H
 
 #define _GNU_SOURCE
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <string.h>
-
 
 typedef struct {
     char system_name[8];
@@ -22,13 +22,8 @@ typedef struct {
     char label[11];
 } FAT16;
 
-
-
-int FAT16_METADATA_init( char *);
-
-FAT16 FAT16_METADATA_info(int);
+FAT16 FAT16_METADATA_init(char *);
 
 void FAT16_METADATA_print(FAT16);
 
 #endif
-
