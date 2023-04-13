@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include "../lib/fat16_metadata.h"
+#include "../lib/ext2_metadata.h"
 
 int main(int argc, char* argv[]) {
     
@@ -16,4 +17,9 @@ int main(int argc, char* argv[]) {
     FAT16_METADATA_print(fat16);
     return 0;
 
+    // TODO: apply algorithm to extract metadata informationº
+    EXT2_metadata superblock;
+    EXT2_METADATA_init(&superblock, argv[2]);
+    EXT2_METADATA_print(&superblock);
+    return -1;
 }
