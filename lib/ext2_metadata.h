@@ -10,6 +10,7 @@
 #include <unistd.h>
 #include <time.h>
 
+#define EXT2_MAGIC_NUMBER 0xEF53
 
 #define SUPERBLOCK_OFFSET 1024
 
@@ -24,6 +25,8 @@
 #define INODES_PER_GROUP_OFFSET 40
 #define MTIME_OFFSET 44
 #define WTIME_OFFSET 48
+
+#define S_MAGIC_OFFSET 56
 
 #define LASTCHECK_OFFSET 64
 
@@ -69,11 +72,13 @@ typedef struct {
     // s_magic identify the filesystem as Ext2
 } EXT2_metadata;
 
+int EXT2_METADATA_isEXT2(int fd);
+
 void EXT2_METADATA_lseek_or_die(int fd, int offset, int action);
 
 void EXT2_METADATA_read_or_die(int fd, void *buffer, int size, char *error_msg);
 
-EXT2_metadata EXT2_METADATA_init(char *path);
+EXT2_metadata EXT2_METADATA_init(int fd);
 
 void EXT2_METADATA_print(EXT2_metadata metadata);
 

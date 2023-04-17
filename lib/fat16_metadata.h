@@ -22,7 +22,9 @@ typedef struct {
     char label[11];
 } FAT16;
 
-FAT16 FAT16_METADATA_init(char *);
+int FAT16_METADATA_isFAT16(int fd);
+
+FAT16 FAT16_METADATA_init(int fd);
 
 void FAT16_METADATA_print(FAT16);
 

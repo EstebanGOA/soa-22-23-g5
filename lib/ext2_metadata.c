@@ -1,5 +1,15 @@
 #include "ext2_metadata.h"
 
+int EXT2_METADATA_isEXT2(int fd) {
+    unsigned short int magic_number;
+    lseek(fd, SUPERBLOCK_OFFSET + S_MAGIC_OFFSET, SEEK_SET);
+    if (read(fd, &magic_number, sizeof(unsigned short int)) < 0) {
+        printf("Error reading file");
+        exit(1);
+    }
+    return magic_number == EXT2_MAGIC_NUMBER;
+}
+
 void EXT2_METADATA_lseek_or_die(int fd, int offset, int action)
 {
     if(lseek(fd, SUPERBLOCK_OFFSET + offset, action) < 0)
@@ -19,17 +29,9 @@ void EXT2_METADATA_read_or_die(int fd, void *buffer, int size, char *error_msg)
     }
 }
 
-EXT2_metadata EXT2_METADATA_init(char *path)
+EXT2_metadata EXT2_METADATA_init(int fd)
 {
     EXT2_metadata metadata;
-    int fd;
-
-    fd = open(path, O_RDONLY);
-    if (fd < 0) 
-    {
-        printf("Error: file not found");
-        exit(1);
-    }
         
     EXT2_METADATA_lseek_or_die(fd, 0, SEEK_SET);
     EXT2_METADATA_read_or_die(fd, &metadata.s_inodes_count, sizeof(int), "Error: could not read inodes count");
