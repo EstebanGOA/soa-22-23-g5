@@ -56,14 +56,16 @@ FAT16 FAT16_METADATA_init(int fd) {
         exit(0);
     }
     
-    memcpy(fat16.system_name, buffer + 3, 8);
+    memcpy(fat16.system_name, buffer + 3, 8 + 1);
+    fat16.system_name[8] = '\0';
     memcpy(&fat16.sector_size, buffer + 11, 2);
     memcpy(&fat16.sectors_per_cluster, buffer + 13, 1);
     memcpy(&fat16.reserved_sectors, buffer + 14, 2);
     memcpy(&fat16.number_of_fats, buffer + 16, 1);
     memcpy(&fat16.root_dir_entries, buffer + 17, 2);
     memcpy(&fat16.sectors_per_fat, buffer + 22, 2);
-    memcpy(fat16.label, buffer + 43, 11);
+    memcpy(fat16.label, buffer + 43, 11 + 1);
+    fat16.label[11] = '\0';
     free(buffer);
     close(fd);
 
