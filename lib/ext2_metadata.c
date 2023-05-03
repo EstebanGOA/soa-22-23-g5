@@ -17,20 +17,7 @@ EXT2_group EXT2_MODULE_get_group_descriptors(int fd, int block_size, int offset)
         printf("Error: could not read group descriptors\n");
         exit(1);
     }
-    // EXT2_MODULE_print_group(group);
     return group;
-}
-
-void EXT2_MODULE_print_group(EXT2_group group)
-{
-    printf("-------- Group descriptors --------\n");
-    printf("bg_block_bitmap: %d\n", group.bg_block_bitmap);
-    printf("bg_inode_bitmap: %d\n", group.bg_inode_bitmap);
-    printf("bg_inode_table: %d\n", group.bg_inode_table);
-    printf("bg_free_blocks_count: %d\n", group.bg_free_blocks_count);
-    printf("bg_free_inodes_count: %d\n", group.bg_free_inodes_count);
-    printf("bg_used_dirs_count: %d\n", group.bg_used_dirs_count);
-    printf("bg_pad: %d\n", group.bg_pad);
 }
 
 EXT2_inode EXT2_MODULE_get_inode(int fd, int position, EXT2_group group, EXT2_metadata metadata)
@@ -51,33 +38,13 @@ EXT2_inode EXT2_MODULE_get_inode(int fd, int position, EXT2_group group, EXT2_me
         printf("Error: could not read inode\n");
         exit(1);
     }
-    // EXT2_MODULE_print_inode(inode);
     return inode;
-}
-
-void EXT2_MODULE_print_inode(EXT2_inode inode)
-{
-    printf("-------- Inode table --------\n");
-    printf("i_mode: %d\n", inode.i_mode);
-    printf("i_uid: %d\n", inode.i_uid);
-    printf("i_size: %d\n", inode.i_size);
-    printf("i_atime: %d\n", inode.i_atime);
-    printf("i_ctime: %d\n", inode.i_ctime);
-    printf("i_mtime: %d\n", inode.i_mtime);
-    printf("i_dtime: %d\n", inode.i_dtime);
-    printf("i_gid: %d\n", inode.i_gid);
-    printf("i_links_count: %d\n", inode.i_links_count);
-    printf("i_blocks: %d\n", inode.i_blocks);
-    printf("i_flags: %d\n", inode.i_flags);
-    printf("i_osd1: %d\n", inode.i_osd1);
-    printf("i_block[0]: %d\n", inode.i_block[0]);
 }
 
 void EXT2_MODULE_read_inode(int fd, EXT2_inode inode, EXT2_metadata metadata, int level)
 {
     int offset = 0, acum = 0;
     int block_size = (1024 << metadata.s_log_block_size);
-    // unsigned char buffer[block_size];
     EXT2_entry entry;
     EXT2_inode sub_inode;
     EXT2_group sub_group;
@@ -133,8 +100,6 @@ void EXT2_MODULE_show_filesystem(int fd)
     uint32_t block_size;
 
     metadata = EXT2_MODULE_get_metadata(fd);
-    printf("sizeof(EXT2_inode): %ld\n", sizeof(EXT2_inode));
-    printf("s_inode_size: %d\n", metadata.s_inode_size);
     block_size = (1024 << metadata.s_log_block_size);
 
     group = EXT2_MODULE_get_group_descriptors(fd, block_size, 0);
@@ -142,7 +107,7 @@ void EXT2_MODULE_show_filesystem(int fd)
     EXT2_MODULE_read_inode(fd, inode, metadata, 0);
 }
 
-int EXT2_MODULE_isEXT2(int fd)
+int EXT2_MODULE_is_EXT2(int fd)
 {
     uint16_t magic_number;
     lseek(fd, SUPERBLOCK_OFFSET + S_MAGIC_OFFSET, SEEK_SET);
@@ -206,7 +171,7 @@ EXT2_metadata EXT2_MODULE_get_metadata(int fd)
     return metadata;
 }
 
-void EXT2_MODULE_printMetadata(EXT2_metadata metadata)
+void EXT2_MODULE_print_metadata(EXT2_metadata metadata)
 {
     char *buffer = NULL;
     time_t s_lastcheck = (time_t)metadata.s_lastcheck;
