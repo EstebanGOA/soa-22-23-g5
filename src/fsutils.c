@@ -11,6 +11,7 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
+    
     // TODO: identify file format
     int fd = open(argv[2], O_RDONLY);
     if (fd < 0)
@@ -19,17 +20,20 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
-    if (EXT2_METADATA_isEXT2(fd))
+    EXT2_MODULE_show_filesystem(fd);
+
+    /*
+    if (EXT2_MODULE_isEXT2(fd))
     {
-        EXT2_metadata metadata = EXT2_METADATA_init(fd);
-        EXT2_METADATA_print(metadata);
+        EXT2_metadata metadata = EXT2_MODULE_get_metadata(fd);
+        EXT2_MODULE_printMetadata(metadata);
     }
     else if (FAT16_METADATA_isFAT16(fd))
     {
         FAT16 metadata = FAT16_METADATA_init(fd);
         FAT16_METADATA_print(metadata);
     }
-
+    */
     close(fd);
     return 0;
 }
