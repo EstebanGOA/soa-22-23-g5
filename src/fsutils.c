@@ -27,7 +27,17 @@ int main(int argc, char *argv[])
     else if (FAT16_METADATA_isFAT16(fd))
     {
         FAT16 metadata = FAT16_METADATA_init(fd);
-        FAT16_METADATA_print(metadata);
+        
+        if (!strcmp(argv[1], "--info"))
+        {
+            FAT16 metadata = FAT16_METADATA_init(fd);
+            FAT16_METADATA_print(metadata);
+        } else if (!strcmp(argv[1], "--tree")) {
+            FAT16_makeTree(fd, metadata, FAT16_getRootDirection(metadata), 0);
+
+        }
+      
+
     }
 
     close(fd);

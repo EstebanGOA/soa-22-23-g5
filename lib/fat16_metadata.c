@@ -65,7 +65,6 @@ FAT16 FAT16_METADATA_init(int fd) {
     memcpy(&fat16.sectors_per_fat, buffer + 22, 2);
     memcpy(fat16.label, buffer + 43, 11);
     free(buffer);
-    close(fd);
 
     return fat16;
     
@@ -85,4 +84,102 @@ void FAT16_METADATA_print(FAT16 fat16)
     printf("Max root entries: %d\n", fat16.root_dir_entries);
     printf("Sector per FAT: %d\n", fat16.sectors_per_fat);
     printf("Label: %s\n", fat16.label);
+
 }
+
+int FAT16_getRootDirection(FAT16 fat16) {
+    return (fat16.reserved_sectors + (fat16.sectors_per_fat * fat16.number_of_fats)) * fat16.sector_size + 32;
+
+}
+
+int FAT16_getDirection(FAT16 fat16, int cluster) {
+    int RootDirSectors = ((fat16.root_dir_entries*32)+ (fat16.sector_size -1)) / fat16.sector_size;
+    int FirstDataSector = fat16.reserved_sectors + (fat16.sectors_per_fat * fat16.number_of_fats) + RootDirSectors;
+    int FirstSectorOfCluster = (((cluster - 2) * fat16.sectors_per_cluster) + FirstDataSector) * fat16.sector_size;
+    return FirstSectorOfCluster;
+}
+
+int FAT16_checkStatus(char c) {
+    char ilegal[NUMBER_ILEGAL_CHARS] = { 0x22, 0x2A, 0x2B, 0x2C, 0x2E, 0x2F, 0x3A, 0x3B, 0x3C, 0x3D, 0x3E, 0x3F, 0x5B, 0x5C, 0x5D, 0x7C };
+
+    for (int i = 0; i < NUMBER_ILEGAL_CHARS; i++) {
+        if (c == ilegal[i]) return 1;
+    } 
+    return 0;
+}
+
+FAT16_entry FAT16_readEntry(int fd) {
+    FAT16_entry entry;
+    
+    read(fd, entry.name, 8);
+    entry.name[8] = '\0';
+    for (int i = 0; i < 9; i++) {
+        if (entry.name[i] == 0x20) {
+            entry.name[i] = '\0';
+            break;
+        }
+    }
+    read(fd, entry.extension, 3);
+    entry.extension[3] = '\0';
+
+    read(fd, &entry.attributes, 1);
+
+    lseek(fd, 14, SEEK_CUR);
+    read(fd, &entry.first_cluster_low, 2);
+
+    lseek(fd, 4, SEEK_CUR);
+
+    return entry;    
+}
+    
+
+void FAT16_makeTree(int fd, FAT16 fat16, int base_direction, int depth) {
+    FAT16_entry entry;
+    int direction = base_direction;
+    lseek(fd, direction, SEEK_SET);
+    while (1) {
+
+        // Read the entry
+        entry = FAT16_readEntry(fd);
+        // Size of an entry
+        direction += 32;
+        if (entry.name[0] == 0x00) break;
+        if (entry.name[0] == 0xE5) continue;
+        if (entry.attributes == 0x0F) continue;
+        if (FAT16_checkStatus(entry.name[0])) continue;
+
+        FAT16_SHOW_ENTRY(entry, depth);
+
+        // Check if it's a directory
+        if (entry.attributes == 0x10) {
+            int dir = FAT16_getDirection(fat16, entry.first_cluster_low);
+            FAT16_makeTree(fd, fat16, dir, depth + 1);
+            lseek(fd, direction, SEEK_SET);
+        }
+
+    }
+
+
+}
+
+uint8_t* FAT16_toLower(uint8_t *s) {
+    int length = strlen((char *) s);
+    for (int i = 0; i < length; i++) {
+        if (s[i] >= 'A' && s[i] <= 'Z') s[i] += 32;
+    }
+    return s;
+}
+
+void FAT16_SHOW_ENTRY(FAT16_entry entry, int depth) {
+    if (depth == 0) {
+        printf("|- %s", FAT16_toLower(entry.name));
+        if (entry.extension[0] != 0x20) {
+            printf(".%s", FAT16_toLower(entry.extension));
+        }
+        printf("\n");
+    } else {
+        printf("  ");
+        FAT16_SHOW_ENTRY(entry, depth - 1);   
+    }
+}
+    
