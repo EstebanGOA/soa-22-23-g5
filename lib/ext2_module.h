@@ -1,5 +1,5 @@
-#ifndef _EXT2_MODULE_H_
-#define _EXT2_MODULE_H_
+#ifndef _EXT2_MODULE_H
+#define _EXT2_MODULE_H
 
 #define _GNU_SOURCE
 
@@ -127,24 +127,22 @@ typedef struct {
     char *name;
 } EXT2_entry;
 
-int EXT2_MODULE_is_EXT2(int fd);
+int EXT2_MODULE_isEXT2(int fd);
 
-void EXT2_MODULE_lseek_or_die(int fd, int offset, int action);
+void EXT2_MODULE_lseekOrDie(int fd, int offset, int action);
 
-void EXT2_MODULE_read_or_die(int fd, void *buffer, int size, char *error_msg);
+void EXT2_MODULE_readOrDie(int fd, void *buffer, int size, char *error_msg);
 
-EXT2_metadata EXT2_MODULE_get_metadata(int fd);
+EXT2_metadata EXT2_MODULE_getMetadata(int fd);
 
-void EXT2_MODULE_print_metadata(EXT2_metadata metadata);
+void EXT2_MODULE_printMetadata(EXT2_metadata metadata);
 
-EXT2_group EXT2_MODULE_get_group_descriptors(int fd, int block_size, int offset);
+EXT2_group EXT2_MODULE_getGroupDescriptors(int fd, int block_size, int offset);
 
-EXT2_inode EXT2_MODULE_get_inode(int fd, int position, EXT2_group group, EXT2_metadata metadata);
+EXT2_inode EXT2_MODULE_getInode(int fd, int position, EXT2_group group, EXT2_metadata metadata);
 
-void EXT2_MODULE_read_inode(int fd, EXT2_inode inode, EXT2_metadata metadata, int level);
+void EXT2_MODULE_readInode(int fd, EXT2_inode inode, EXT2_metadata metadata, int level);
 
-void EXT2_MODULE_show_filesystem(int fd);
-
-void EXT2_MODULE_print(EXT2_inode inode);
+void EXT2_MODULE_showFilesystem(int fd);
 
 #endif

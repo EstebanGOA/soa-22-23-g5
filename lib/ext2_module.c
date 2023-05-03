@@ -1,6 +1,6 @@
-#include "ext2_metadata.h"
+#include "ext2_module.h"
 
-EXT2_group EXT2_MODULE_get_group_descriptors(int fd, int block_size, int offset)
+EXT2_group EXT2_MODULE_getGroupDescriptors(int fd, int block_size, int offset)
 {
     EXT2_group group;
     int bytes_read;
@@ -20,7 +20,7 @@ EXT2_group EXT2_MODULE_get_group_descriptors(int fd, int block_size, int offset)
     return group;
 }
 
-EXT2_inode EXT2_MODULE_get_inode(int fd, int position, EXT2_group group, EXT2_metadata metadata)
+EXT2_inode EXT2_MODULE_getInode(int fd, int position, EXT2_group group, EXT2_metadata metadata)
 {
     EXT2_inode inode;
     int bytes_read = 0;
@@ -41,7 +41,7 @@ EXT2_inode EXT2_MODULE_get_inode(int fd, int position, EXT2_group group, EXT2_me
     return inode;
 }
 
-void EXT2_MODULE_read_inode(int fd, EXT2_inode inode, EXT2_metadata metadata, int level)
+void EXT2_MODULE_readInode(int fd, EXT2_inode inode, EXT2_metadata metadata, int level)
 {
     int offset = 0, acum = 0;
     int block_size = (1024 << metadata.s_log_block_size);
@@ -84,30 +84,30 @@ void EXT2_MODULE_read_inode(int fd, EXT2_inode inode, EXT2_metadata metadata, in
         {
             block_group = (entry.inode - 1) / metadata.s_inodes_per_group;
             local_inode_index = (entry.inode - 1) % metadata.s_inodes_per_group;
-            sub_group = EXT2_MODULE_get_group_descriptors(fd, block_size, block_group);
-            sub_inode = EXT2_MODULE_get_inode(fd, local_inode_index * metadata.s_inode_size, sub_group, metadata);
-            EXT2_MODULE_read_inode(fd, sub_inode, metadata, level + 1);
+            sub_group = EXT2_MODULE_getGroupDescriptors(fd, block_size, block_group);
+            sub_inode = EXT2_MODULE_getInode(fd, local_inode_index * metadata.s_inode_size, sub_group, metadata);
+            EXT2_MODULE_readInode(fd, sub_inode, metadata, level + 1);
         }
         free(entry.name);
     } while (acum < inode.i_size);
 }
 
-void EXT2_MODULE_show_filesystem(int fd)
+void EXT2_MODULE_showFilesystem(int fd)
 {
     EXT2_group group;
     EXT2_metadata metadata;
     EXT2_inode inode;
     uint32_t block_size;
 
-    metadata = EXT2_MODULE_get_metadata(fd);
+    metadata = EXT2_MODULE_getMetadata(fd);
     block_size = (1024 << metadata.s_log_block_size);
 
-    group = EXT2_MODULE_get_group_descriptors(fd, block_size, 0);
-    inode = EXT2_MODULE_get_inode(fd, 2 * sizeof(EXT2_inode), group, metadata);
-    EXT2_MODULE_read_inode(fd, inode, metadata, 0);
+    group = EXT2_MODULE_getGroupDescriptors(fd, block_size, 0);
+    inode = EXT2_MODULE_getInode(fd, 2 * sizeof(EXT2_inode), group, metadata);
+    EXT2_MODULE_readInode(fd, inode, metadata, 0);
 }
 
-int EXT2_MODULE_is_EXT2(int fd)
+int EXT2_MODULE_isEXT2(int fd)
 {
     uint16_t magic_number;
     lseek(fd, SUPERBLOCK_OFFSET + S_MAGIC_OFFSET, SEEK_SET);
@@ -119,7 +119,7 @@ int EXT2_MODULE_is_EXT2(int fd)
     return magic_number == EXT2_MAGIC_NUMBER;
 }
 
-void EXT2_MODULE_lseek_or_die(int fd, int offset, int action)
+void EXT2_MODULE_lseekOrDie(int fd, int offset, int action)
 {
     if (lseek(fd, SUPERBLOCK_OFFSET + offset, action) < 0)
     {
@@ -128,7 +128,7 @@ void EXT2_MODULE_lseek_or_die(int fd, int offset, int action)
     }
 }
 
-void EXT2_MODULE_read_or_die(int fd, void *buffer, int size, char *error_msg)
+void EXT2_MODULE_readOrDie(int fd, void *buffer, int size, char *error_msg)
 {
     int bytes_read = read(fd, buffer, size);
     if (bytes_read < 0)
@@ -138,40 +138,40 @@ void EXT2_MODULE_read_or_die(int fd, void *buffer, int size, char *error_msg)
     }
 }
 
-EXT2_metadata EXT2_MODULE_get_metadata(int fd)
+EXT2_metadata EXT2_MODULE_getMetadata(int fd)
 {
     EXT2_metadata metadata;
 
-    EXT2_MODULE_lseek_or_die(fd, 0, SEEK_SET);
-    EXT2_MODULE_read_or_die(fd, &metadata.s_inodes_count, sizeof(uint32_t), "Error: could not read inodes count");
-    EXT2_MODULE_read_or_die(fd, &metadata.s_blocks_count, sizeof(uint32_t), "Error: could not read blocks count");
-    EXT2_MODULE_read_or_die(fd, &metadata.s_r_blocks_count, sizeof(uint32_t), "Error: could not read reserved blocks count");
-    EXT2_MODULE_read_or_die(fd, &metadata.s_free_blocks_count, sizeof(uint32_t), "Error: could not read free blocks count");
-    EXT2_MODULE_read_or_die(fd, &metadata.s_free_inodes_count, sizeof(uint32_t), "Error: could not read free inodes count");
-    EXT2_MODULE_read_or_die(fd, &metadata.s_first_data_block, sizeof(uint32_t), "Error: could not read first data block");
-    EXT2_MODULE_read_or_die(fd, &metadata.s_log_block_size, sizeof(uint32_t), "Error: could not read log block size");
+    EXT2_MODULE_lseekOrDie(fd, 0, SEEK_SET);
+    EXT2_MODULE_readOrDie(fd, &metadata.s_inodes_count, sizeof(uint32_t), "Error: could not read inodes count");
+    EXT2_MODULE_readOrDie(fd, &metadata.s_blocks_count, sizeof(uint32_t), "Error: could not read blocks count");
+    EXT2_MODULE_readOrDie(fd, &metadata.s_r_blocks_count, sizeof(uint32_t), "Error: could not read reserved blocks count");
+    EXT2_MODULE_readOrDie(fd, &metadata.s_free_blocks_count, sizeof(uint32_t), "Error: could not read free blocks count");
+    EXT2_MODULE_readOrDie(fd, &metadata.s_free_inodes_count, sizeof(uint32_t), "Error: could not read free inodes count");
+    EXT2_MODULE_readOrDie(fd, &metadata.s_first_data_block, sizeof(uint32_t), "Error: could not read first data block");
+    EXT2_MODULE_readOrDie(fd, &metadata.s_log_block_size, sizeof(uint32_t), "Error: could not read log block size");
 
-    EXT2_MODULE_lseek_or_die(fd, BLOCKS_PER_GROUP_OFFSET, SEEK_SET);
-    EXT2_MODULE_read_or_die(fd, &metadata.s_blocks_per_group, sizeof(uint32_t), "Error: could not read blocks per group");
-    EXT2_MODULE_read_or_die(fd, &metadata.s_frags_per_group, sizeof(uint32_t), "Error: could not read frags per group");
-    EXT2_MODULE_read_or_die(fd, &metadata.s_inodes_per_group, sizeof(uint32_t), "Error: could not read inodes per group");
-    EXT2_MODULE_read_or_die(fd, &metadata.s_mtime, sizeof(uint32_t), "Error: could not read mount time");
-    EXT2_MODULE_read_or_die(fd, &metadata.s_wtime, sizeof(uint32_t), "Error: could not read write time");
+    EXT2_MODULE_lseekOrDie(fd, BLOCKS_PER_GROUP_OFFSET, SEEK_SET);
+    EXT2_MODULE_readOrDie(fd, &metadata.s_blocks_per_group, sizeof(uint32_t), "Error: could not read blocks per group");
+    EXT2_MODULE_readOrDie(fd, &metadata.s_frags_per_group, sizeof(uint32_t), "Error: could not read frags per group");
+    EXT2_MODULE_readOrDie(fd, &metadata.s_inodes_per_group, sizeof(uint32_t), "Error: could not read inodes per group");
+    EXT2_MODULE_readOrDie(fd, &metadata.s_mtime, sizeof(uint32_t), "Error: could not read mount time");
+    EXT2_MODULE_readOrDie(fd, &metadata.s_wtime, sizeof(uint32_t), "Error: could not read write time");
 
-    EXT2_MODULE_lseek_or_die(fd, LASTCHECK_OFFSET, SEEK_SET);
-    EXT2_MODULE_read_or_die(fd, &metadata.s_lastcheck, sizeof(uint32_t), "Error: could not read last check");
+    EXT2_MODULE_lseekOrDie(fd, LASTCHECK_OFFSET, SEEK_SET);
+    EXT2_MODULE_readOrDie(fd, &metadata.s_lastcheck, sizeof(uint32_t), "Error: could not read last check");
 
-    EXT2_MODULE_lseek_or_die(fd, FIRST_INO_OFFSET, SEEK_SET);
-    EXT2_MODULE_read_or_die(fd, &metadata.s_first_ino, sizeof(uint32_t), "Error: could not read first inode");
-    EXT2_MODULE_read_or_die(fd, &metadata.s_inode_size, sizeof(uint16_t), "Error: could not read inode size");
+    EXT2_MODULE_lseekOrDie(fd, FIRST_INO_OFFSET, SEEK_SET);
+    EXT2_MODULE_readOrDie(fd, &metadata.s_first_ino, sizeof(uint32_t), "Error: could not read first inode");
+    EXT2_MODULE_readOrDie(fd, &metadata.s_inode_size, sizeof(uint16_t), "Error: could not read inode size");
 
-    EXT2_MODULE_lseek_or_die(fd, VOLUME_NAME_OFFSET, SEEK_SET);
-    EXT2_MODULE_read_or_die(fd, &metadata.s_volume_name, sizeof(char) * 16, "Error: could not read volume name");
+    EXT2_MODULE_lseekOrDie(fd, VOLUME_NAME_OFFSET, SEEK_SET);
+    EXT2_MODULE_readOrDie(fd, &metadata.s_volume_name, sizeof(char) * 16, "Error: could not read volume name");
 
     return metadata;
 }
 
-void EXT2_MODULE_print_metadata(EXT2_metadata metadata)
+void EXT2_MODULE_printMetadata(EXT2_metadata metadata)
 {
     char *buffer = NULL;
     time_t s_lastcheck = (time_t)metadata.s_lastcheck;

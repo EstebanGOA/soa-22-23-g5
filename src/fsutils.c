@@ -1,7 +1,7 @@
 #include <stdio.h>
 
-#include "../lib/ext2_metadata.h"
-#include "../lib/fat16_metadata.h"
+#include "../lib/ext2_module.h"
+#include "../lib/fat16_module.h"
 
 int main(int argc, char *argv[])
 {
@@ -11,7 +11,6 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
-    // TODO: identify file format
     int fd = open(argv[2], O_RDONLY);
     if (fd < 0)
     {
@@ -21,37 +20,38 @@ int main(int argc, char *argv[])
 
     if (strcmp(argv[1], "--info") == 0)
     {
-        if (EXT2_MODULE_is_EXT2(fd))
+        if (EXT2_MODULE_isEXT2(fd))
         {
-            EXT2_metadata metadata = EXT2_MODULE_get_metadata(fd);
-            EXT2_MODULE_print_metadata(metadata);
+            EXT2_metadata metadata = EXT2_MODULE_getMetadata(fd);
+            EXT2_MODULE_printMetadata(metadata);
         }
-        else if (FAT16_METADATA_isFAT16(fd))
+        else if (FAT16_MODULE_isFAT16(fd))
         {
-            FAT16 metadata = FAT16_METADATA_init(fd);
-            FAT16_METADATA_print(metadata);
+            FAT16 metadata = FAT16_MODULE_init(fd);
+            FAT16_MODULE_print(metadata);
         }
     }
     else if (strcmp(argv[1], "--tree") == 0)
     {
-        if (EXT2_MODULE_is_EXT2(fd))
+        if (EXT2_MODULE_isEXT2(fd))
         {
-            EXT2_MODULE_show_filesystem(fd);
+            EXT2_MODULE_showFilesystem(fd);
         }
-        else if (FAT16_METADATA_isFAT16(fd))
+        else if (FAT16_MODULE_isFAT16(fd))
         {
-            // TODO: 
+            FAT16 metadata = FAT16_MODULE_init(fd);
+            FAT16_MODULE_makeTree(fd, metadata, FAT16_MODULE_getRootDirection(metadata), 0);
         }
-    }   
+    }
     else if (strcmp(argv[1], "--cat") == 0)
     {
+        // TODO: implement cat
     }
     else
     {
         printf("Error: invalid option");
         exit(1);
     }
-
 
     close(fd);
     return 0;
