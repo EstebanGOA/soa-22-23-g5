@@ -145,4 +145,10 @@ void EXT2_MODULE_readInode(int fd, EXT2_inode inode, EXT2_metadata metadata, int
 
 void EXT2_MODULE_showFilesystem(int fd);
 
+int EXT2_MODULE_getFileInode(int fd, EXT2_inode inode, EXT2_metadata metadata, char *filename);
+
+void EXT2_MODULE_printFile(int fd, EXT2_inode inode, EXT2_metadata metadata);
+
+void EXT2_MODULE_searchFile(int fd, char *filename);
+
 #endif

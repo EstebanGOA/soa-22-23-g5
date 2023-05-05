@@ -66,8 +66,10 @@ void EXT2_MODULE_readInode(int fd, EXT2_inode inode, EXT2_metadata metadata, int
         offset += entry.rec_len;
         acum += entry.rec_len;
 
-        if (strcmp(entry.name, ".") == 0 || strcmp(entry.name, "..") == 0)
+        if (strcmp(entry.name, ".") == 0 || strcmp(entry.name, "..") == 0) {
+            free(entry.name);
             continue;
+        }
 
         if (entry.file_type == EXT2_FT_DIR || entry.file_type == EXT2_FT_REG_FILE)
         {
@@ -211,5 +213,93 @@ void EXT2_MODULE_printMetadata(EXT2_metadata metadata)
     buffer = (char *)malloc(sizeof(char) * 80); // 80 is the max length of a string
     strftime(buffer, sizeof(char) * 80, "%a %b %d %H:%M:%S %Y", localtime(&s_wtime));
     printf("\tLast Written: %s\n", buffer);
+    free(buffer);
+}
+
+void EXT2_MODULE_searchFile(int fd, char *filename)
+{
+    EXT2_group group;
+    EXT2_metadata metadata;
+    EXT2_inode inode;
+    uint32_t block_size;
+    int result;
+
+    metadata = EXT2_MODULE_getMetadata(fd);
+    block_size = (1024 << metadata.s_log_block_size);
+
+    group = EXT2_MODULE_getGroupDescriptors(fd, block_size, 0);
+    inode = EXT2_MODULE_getInode(fd, 2 * sizeof(EXT2_inode), group, metadata);
+    result = EXT2_MODULE_getFileInode(fd, inode, metadata, filename);
+    if (result == -1)
+        printf("File not found\n");
+}
+
+int EXT2_MODULE_getFileInode(int fd, EXT2_inode inode, EXT2_metadata metadata, char *filename)
+{
+    EXT2_entry entry;
+    EXT2_inode sub_inode;
+    EXT2_group sub_group;
+    int acum = 0, found = -1, tmp = 0;
+    int block_size = (1024 << metadata.s_log_block_size);
+    int offset = SUPERBLOCK_OFFSET + (inode.i_block[0] - 1) * block_size;
+    int block_group = 0, local_inode_index = 0;
+    do
+    {
+        lseek(fd, offset, SEEK_SET);
+        read(fd, &entry.inode, sizeof(entry.inode));
+        read(fd, &entry.rec_len, sizeof(entry.rec_len));
+        read(fd, &entry.name_len, sizeof(entry.name_len));
+        read(fd, &entry.file_type, sizeof(entry.file_type));
+        entry.name = malloc(entry.name_len + 1);
+        read(fd, entry.name, entry.name_len);
+        entry.name[(int)entry.name_len] = '\0';
+
+        offset += entry.rec_len;
+        acum += entry.rec_len;
+
+        if (strcmp(entry.name, ".") == 0 || strcmp(entry.name, "..") == 0) {
+            free(entry.name);
+            continue;
+        }
+
+        if (entry.file_type == EXT2_FT_REG_FILE)
+        {
+            if (strcmp(entry.name, filename) == 0)
+            {
+                block_group = (entry.inode - 1) / metadata.s_inodes_per_group;
+                local_inode_index = (entry.inode - 1) % metadata.s_inodes_per_group;
+                sub_group = EXT2_MODULE_getGroupDescriptors(fd, block_size, block_group);
+                sub_inode = EXT2_MODULE_getInode(fd, local_inode_index * metadata.s_inode_size, sub_group, metadata);
+                EXT2_MODULE_printFile(fd, sub_inode, metadata);
+                free(entry.name);
+                return 1;
+            }
+        }
+
+        if (entry.file_type == EXT2_FT_DIR)
+        {
+            block_group = (entry.inode - 1) / metadata.s_inodes_per_group;
+            local_inode_index = (entry.inode - 1) % metadata.s_inodes_per_group;
+            sub_group = EXT2_MODULE_getGroupDescriptors(fd, block_size, block_group);
+            sub_inode = EXT2_MODULE_getInode(fd, local_inode_index * metadata.s_inode_size, sub_group, metadata);
+            tmp = EXT2_MODULE_getFileInode(fd, sub_inode, metadata, filename);
+            if (found <= 0)
+                found = tmp;
+        }
+        free(entry.name);
+
+    } while (acum < inode.i_size);
+    return found;
+}
+
+void EXT2_MODULE_printFile(int fd, EXT2_inode inode, EXT2_metadata metadata)
+{
+    int block_size = (1024 << metadata.s_log_block_size);
+    int offset = SUPERBLOCK_OFFSET + (inode.i_block[0] - 1) * block_size;
+    char *buffer = malloc(sizeof(char) * inode.i_size + 1);
+    lseek(fd, offset, SEEK_SET);
+    read(fd, buffer, inode.i_size);
+    buffer[inode.i_size] = '\0';
+    printf("%s\n", buffer);
     free(buffer);
 }
