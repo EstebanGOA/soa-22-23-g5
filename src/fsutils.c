@@ -5,7 +5,7 @@
 
 int main(int argc, char *argv[])
 {
-    if (argc != 3)
+    if (argc <= 2)
     {
         printf("Usage: ./fsutils --info <file system>\n");
         exit(1);
@@ -27,7 +27,7 @@ int main(int argc, char *argv[])
         }
         else if (FAT16_MODULE_isFAT16(fd))
         {
-            FAT16 metadata = FAT16_MODULE_init(fd);
+            FAT16_metadata metadata = FAT16_MODULE_init(fd);
             FAT16_MODULE_print(metadata);
         }
     }
@@ -39,13 +39,18 @@ int main(int argc, char *argv[])
         }
         else if (FAT16_MODULE_isFAT16(fd))
         {
-            FAT16 metadata = FAT16_MODULE_init(fd);
+            FAT16_metadata metadata = FAT16_MODULE_init(fd);
             FAT16_MODULE_makeTree(fd, metadata, FAT16_MODULE_getRootDirection(metadata), 0);
         }
     }
     else if (strcmp(argv[1], "--cat") == 0)
     {
         // TODO: implement cat
+        if (FAT16_MODULE_isFAT16(fd))
+        {
+            FAT16_metadata metadata = FAT16_MODULE_init(fd);
+            FAT16_MODULE_searchFile(fd, argv[3], metadata, FAT16_MODULE_getRootDirection(metadata)) == 1 ? 0 : printf("File not found");
+        }
     }
     else
     {

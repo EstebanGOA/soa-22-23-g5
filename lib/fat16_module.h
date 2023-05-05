@@ -10,6 +10,7 @@
 #include <string.h>
 #include <stdint.h>
 
+#define NUMBER_ILEGAL_CHARS 16
 
 typedef struct {
     char system_name[8];
@@ -22,7 +23,7 @@ typedef struct {
     unsigned char media_descriptor;
     unsigned short sectors_per_fat;
     char label[11];
-} FAT16;
+} FAT16_metadata;
 
 
 typedef struct {
@@ -41,26 +42,31 @@ typedef struct {
     uint32_t file_size;
 } FAT16_entry;
 
-#define NUMBER_ILEGAL_CHARS 16
 
 int FAT16_MODULE_isFAT16(int fd);
 
-FAT16 FAT16_MODULE_init(int fd);
+FAT16_metadata FAT16_MODULE_init(int fd);
 
-void FAT16_MODULE_print(FAT16);
+void FAT16_MODULE_print(FAT16_metadata);
 
-int FAT16_MODULE_getRootDirection(FAT16);
+int FAT16_MODULE_getRootDirection(FAT16_metadata);
 
-int FAT16_MODULE_getDirection(FAT16, int);
+int FAT16_MODULE_getDirection(FAT16_metadata, int);
 
 int FAT16_MODULE_checkStatus(char);
 
 FAT16_entry FAT16_MODULE_readEntry(int);
 
-void FAT16_MODULE_makeTree(int fd, FAT16, int, int);
+void FAT16_MODULE_makeTree(int fd, FAT16_metadata, int, int);
 
 uint8_t* FAT16_MODULE_toLower(uint8_t *);
 
 void FAT16_MODULE_showEntry(FAT16_entry, int);
+
+int FAT16_MODULE_searchFile(int fd, char *filename, FAT16_metadata metadata, int base_direction);
+
+char* concat(char *filename, char *extension);
+
+void FAT16_MODULE_readFile(int fd, int direction, FAT16_metadata metadata);
 
 #endif

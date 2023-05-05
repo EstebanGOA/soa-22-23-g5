@@ -46,9 +46,9 @@ int FAT16_MODULE_isFAT16(int fd)
     return -1;
 }
 
-FAT16 FAT16_MODULE_init(int fd)
+FAT16_metadata FAT16_MODULE_init(int fd)
 {
-    FAT16 fat16;
+    FAT16_metadata fat16;
     char *buffer = malloc(512);
     int n;
 
@@ -75,7 +75,7 @@ FAT16 FAT16_MODULE_init(int fd)
     return fat16;
 }
 
-void FAT16_MODULE_print(FAT16 fat16)
+void FAT16_MODULE_print(FAT16_metadata fat16)
 {
     printf("\n------ Filesystem Information ------\n\n");
 
@@ -91,12 +91,12 @@ void FAT16_MODULE_print(FAT16 fat16)
     printf("Label: %s\n", fat16.label);
 }
 
-int FAT16_MODULE_getRootDirection(FAT16 fat16)
+int FAT16_MODULE_getRootDirection(FAT16_metadata fat16)
 {
     return (fat16.reserved_sectors + (fat16.sectors_per_fat * fat16.number_of_fats)) * fat16.sector_size + 32;
 }
 
-int FAT16_MODULE_getDirection(FAT16 fat16, int cluster)
+int FAT16_MODULE_getDirection(FAT16_metadata fat16, int cluster)
 {
     int RootDirSectors = ((fat16.root_dir_entries * 32) + (fat16.sector_size - 1)) / fat16.sector_size;
     int FirstDataSector = fat16.reserved_sectors + (fat16.sectors_per_fat * fat16.number_of_fats) + RootDirSectors;
@@ -122,14 +122,14 @@ FAT16_entry FAT16_MODULE_readEntry(int fd)
 
     read(fd, entry.name, 8);
     entry.name[8] = '\0';
-    for (int i = 0; i < 9; i++)
+    for (int i = 0; i < 8; i++)
     {
         if (entry.name[i] == 0x20)
         {
             entry.name[i] = '\0';
-            break;
         }
     }
+
     read(fd, entry.extension, 3);
     entry.extension[3] = '\0';
 
@@ -139,11 +139,10 @@ FAT16_entry FAT16_MODULE_readEntry(int fd)
     read(fd, &entry.first_cluster_low, 2);
 
     lseek(fd, 4, SEEK_CUR);
-
     return entry;
 }
 
-void FAT16_MODULE_makeTree(int fd, FAT16 fat16, int base_direction, int depth)
+void FAT16_MODULE_makeTree(int fd, FAT16_metadata fat16, int base_direction, int depth)
 {
     FAT16_entry entry;
     int direction = base_direction;
@@ -180,6 +179,9 @@ uint8_t *FAT16_MODULE_toLower(uint8_t *s)
     int length = strlen((char *)s);
     for (int i = 0; i < length; i++)
     {
+        if (s[i] == '\0')
+            break;
+
         if (s[i] >= 'A' && s[i] <= 'Z')
             s[i] += 32;
     }
@@ -199,4 +201,113 @@ void FAT16_MODULE_showEntry(FAT16_entry entry, int depth)
         printf(".%s", FAT16_MODULE_toLower(entry.extension));
     }
     printf("\n");
+}
+
+char *concat(char *filename, char *extension)
+{
+    uint8_t i = 0;
+    uint8_t buffer_size = 1;
+    char *buffer = malloc(sizeof(char) * buffer_size);
+    buffer[0] = '\0';
+
+    for (i = 0; i < strlen(filename); i++)
+    {
+        if (filename[i] != '\0' && filename[i] != 0x20)
+        {
+            buffer_size++;
+            buffer = realloc(buffer, sizeof(char) * buffer_size);
+            buffer[buffer_size - 2] = filename[i];
+            buffer[buffer_size - 1] = '\0';
+        }
+    }
+
+    if (extension[0] != 0x20)
+    {
+        buffer_size++;
+        buffer = realloc(buffer, sizeof(char) * buffer_size);
+        buffer[buffer_size - 2] = '.';
+        buffer[buffer_size - 1] = '\0';
+
+        for (i = 0; i < strlen(extension); i++)
+        {
+            if (extension[i] != '\0' && extension[i] != 0x20)
+            {
+                buffer_size++;
+                buffer = realloc(buffer, sizeof(char) * buffer_size);
+                buffer[buffer_size - 2] = extension[i];
+                buffer[buffer_size - 1] = '\0';
+            }
+        }
+    }
+
+    return buffer;
+}
+
+int FAT16_MODULE_searchFile(int fd, char *filename, FAT16_metadata metadata, int direction)
+{
+    FAT16_entry entry;
+    int first_cluster_low;
+    char *buffer;
+    lseek(fd, direction, SEEK_SET);
+    while (1)
+    {
+        // Read the entry
+        entry = FAT16_MODULE_readEntry(fd);
+        // Size of an entry
+        direction += 32;
+        if (entry.name[0] == 0x00)
+            break;
+        if (entry.name[0] == 0xE5)
+            continue;
+        if (entry.attributes == 0x0F)
+            continue;
+        if (FAT16_MODULE_checkStatus(entry.name[0]))
+            continue;
+
+        buffer = concat((char *) FAT16_MODULE_toLower(entry.name), (char *) FAT16_MODULE_toLower(entry.extension));
+        if (strcmp(buffer, filename) == 0)
+        {
+            first_cluster_low = FAT16_MODULE_getDirection(metadata, entry.first_cluster_low);
+            FAT16_MODULE_readFile(fd, first_cluster_low, metadata);
+            free(buffer);
+            return 1;
+        }
+        free(buffer);
+
+        // Check if it's a directory
+        if (entry.attributes == 0x10)
+        {
+            first_cluster_low = FAT16_MODULE_getDirection(metadata, entry.first_cluster_low);
+            return FAT16_MODULE_searchFile(fd, filename, metadata, first_cluster_low);
+            lseek(fd, direction, SEEK_SET);
+        }
+    }
+    return -1;
+}
+
+
+void FAT16_MODULE_readFile(int fd, int direction, FAT16_metadata metadata) {
+    int bytes_read;
+    int bytes_per_sector = metadata.sector_size * metadata.sectors_per_cluster;
+    int i = 1;
+    char *buffer;
+    
+    
+    lseek(fd, direction, SEEK_SET);
+    buffer = malloc(sizeof(char *) * (bytes_per_sector + i));
+    bytes_read = read(fd, buffer, sizeof(char *) * (bytes_per_sector + i));
+
+    while (bytes_read == bytes_per_sector) {
+        buffer = realloc(buffer, sizeof(char *) * (bytes_per_sector * i + 1));
+        bytes_read = read(fd, buffer + (bytes_per_sector * i), sizeof(char *) * (bytes_per_sector * i + 1));
+        i++;
+    }
+
+    buffer = realloc(buffer, sizeof(char *) * (bytes_per_sector * i - 1) + bytes_read);
+    
+    printf("%s\n", buffer);
+    free(buffer);
+    
+    // TODO: If the file is bigger than one cluster, read the next cluster
+    
 }
