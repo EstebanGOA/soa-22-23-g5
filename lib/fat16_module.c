@@ -41,7 +41,7 @@ int FAT16_MODULE_isFAT16(int fd)
     {
         data_sectors = bpb_totsec16 - (bpb_rsc + (bpb_numfats * bpb_fatsz16) + root_dir_sectors);
         count_clusters = data_sectors / bpb_spc;
-        return (count_clusters > 4085 && count_clusters < 65525) ? 1 : -1;
+        return (count_clusters >= 4085 && count_clusters < 65525) ? 1 : -1;
     }
     return -1;
 }
